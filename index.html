@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Cabinet Designer</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <div class="logo-icon">
+            <svg fill="none" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m21 7.5-9-5.25L3 7.5m18 0-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
+            </svg>
+          </div>
+          <div class="logo-text">
+            <h1>Cabinet Designer</h1>
+            <p>Создайте идеальную мебель</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="sidebar-content">
+        <!-- Переключатель видов -->
+        <div class="view-toggle">
+          <button id="view2d" class="view-btn active">
+            <svg fill="none" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 7.5h16.5M3.75 3.75h16.5" />
+            </svg>
+            2D Редактор
+          </button>
+          <button id="view3d" class="view-btn">
+            <svg fill="none" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m21 7.5-9-5.25L3 7.5m18 0-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
+            </svg>
+            3D Просмотр
+          </button>
+        </div>
+        
+        <div class="control-group">
+          <label class="control-label">Ширина</label>
+          <div class="input-wrapper">
+            <input type="number" id="width" class="input-field" value="800" min="132" max="2000">
+            <span class="input-unit">мм</span>
+          </div>
+        </div>
+        
+        <div class="control-group">
+          <label class="control-label">Высота</label>
+          <div class="input-wrapper">
+            <input type="number" id="height" class="input-field" value="1800" min="132" max="3000">
+            <span class="input-unit">мм</span>
+          </div>
+        </div>
+        
+        <div class="control-group">
+          <label class="control-label">Глубина</label>
+          <div class="input-wrapper">
+            <input type="number" id="depth" class="input-field" value="500" min="100" max="1000">
+            <span class="input-unit">мм</span>
+          </div>
+        </div>
+        
+        <div class="control-group">
+          <label class="control-label">Цоколь</label>
+          <div class="input-wrapper">
+            <input type="number" id="base" class="input-field" value="100" min="60" max="200">
+            <span class="input-unit">мм</span>
+          </div>
+        </div>
+        
+        <div class="button-group">
+          <button id="apply" class="btn btn-primary">
+            <svg fill="none" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+            </svg>
+            Применить
+          </button>
+          
+          <button id="editMode" class="btn btn-secondary">
+            <svg fill="none" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" />
+            </svg>
+            Редактировать
+          </button>
+          
+          <div class="btn-dropdown">
+            <button id="addShelf" class="btn btn-secondary btn-dropdown-main">
+              <svg fill="none" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 12h18" />
+              </svg>
+              Добавить полку
+            </button>
+            <button class="btn btn-dropdown-arrow" data-target="shelfDropdown">
+              <svg fill="none" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+              </svg>
+            </button>
+            <div class="dropdown-menu" id="shelfDropdown">
+              <button class="dropdown-item" data-type="shelf" data-count="2">2 полки</button>
+              <button class="dropdown-item" data-type="shelf" data-count="3">3 полки</button>
+              <button class="dropdown-item" data-type="shelf" data-count="4">4 полки</button>
+              <button class="dropdown-item" data-type="shelf" data-count="5">5 полок</button>
+            </div>
+          </div>
+          
+          <div class="btn-dropdown">
+            <button id="addStand" class="btn btn-secondary btn-dropdown-main">
+              <svg fill="none" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v18" />
+              </svg>
+              Добавить стойку
+            </button>
+            <button class="btn btn-dropdown-arrow" data-target="standDropdown">
+              <svg fill="none" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+              </svg>
+            </button>
+            <div class="dropdown-menu" id="standDropdown">
+              <button class="dropdown-item" data-type="stand" data-count="2">2 стойки</button>
+              <button class="dropdown-item" data-type="stand" data-count="3">3 стойки</button>
+              <button class="dropdown-item" data-type="stand" data-count="4">4 стойки</button>
+              <button class="dropdown-item" data-type="stand" data-count="5">5 стоек</button>
+            </div>
+          </div>
+          
+          <div class="btn-dropdown">
+            <button id="addRod" class="btn btn-secondary btn-dropdown-main">
+              <svg fill="none" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14" />
+                <circle cx="19" cy="12" r="1" />
+                <circle cx="5" cy="12" r="1" />
+              </svg>
+              Добавить штангу
+            </button>
+            <button class="btn btn-dropdown-arrow" data-target="rodDropdown">
+              <svg fill="none" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+              </svg>
+            </button>
+            <div class="dropdown-menu" id="rodDropdown">
+              <button class="dropdown-item" data-type="rod" data-count="1">1 штанга</button>
+              <button class="dropdown-item" data-type="rod" data-count="2">2 штанги</button>
+              <button class="dropdown-item" data-type="rod" data-count="3">3 штанги</button>
+            </div>
+          </div>
+          
+          <button id="deleteMode" class="btn btn-secondary">
+            <svg fill="none" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+            </svg>
+            Удалить элементы
+          </button>
+          
+          <button id="cancel" class="btn btn-tertiary">
+            Отмена
+          </button>
+        </div>
+        
+        <div class="parts-section">
+          <div class="parts-header">
+            <h3>Детали</h3>
+            <span class="parts-count" id="partsCount">0</span>
+          </div>
+          <div class="parts-list" id="partsList">
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="main-content">
+      <div class="toolbar">
+        <button id="mobile-menu" class="toolbar-btn mobile-menu-btn">
+          <svg fill="none" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+          </svg>
+        </button>
+        
+        <button id="toggleDimensions" class="toolbar-btn">
+          <svg fill="none" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m7.49 12-3.75 3.75m0 0 3.75 3.75m-3.75-3.75h16.5m0-7.5-3.75-3.75m3.75 3.75-3.75 3.75m3.75-3.75H3.74" />
+          </svg>
+          Размеры
+        </button>
+        
+        <button id="undo" class="toolbar-btn" title="Отменить (Ctrl+Z)">
+        <svg fill="none" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+        </svg>
+        </button>
+        
+      <button id="redo" class="toolbar-btn" title="Повторить (Ctrl+Y)">
+        <svg fill="none" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 15l6-6m0 0l-6-6m6 6H9a6 6 0 000 12h3" />
+        </svg>
+      </button>
+      
+      <button id="reset" class="toolbar-btn">
+        <svg fill="none" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+        </svg>
+        Сброс
+      </button>
+        
+        <div class="toolbar-spacer"></div>
+        
+        <div class="toolbar-info">
+          <svg fill="none" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+          </svg>
+          Перетаскивайте элементы
+        </div>
+      </div>
+      
+      <div class="canvas-container cabinet-colors">
+        <canvas id="canvas"></canvas>
+        <canvas id="canvas3d" style="display: none;"></canvas>
+        
+        <!-- Контролы для 3D -->
+        <div class="canvas-controls" id="canvas3dControls" style="display: none;">
+          <button class="canvas-btn" id="resetView3d" title="Сбросить вид">
+            <svg fill="none" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+            </svg>
+          </button>
+          <button class="canvas-btn" id="toggleWireframe" title="Каркасный вид">
+            <svg fill="none" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 7.5l-2.25-1.313M21 7.5v2.25m0-2.25l-2.25 1.313M3 7.5l2.25-1.313M3 7.5l2.25 1.313M3 7.5v2.25m18 0V18a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 18V9.75m18 0V9a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 9v.75m18 0A2.25 2.25 0 0019.5 12H4.5A2.25 2.25 0 003 9.75V12" />
+            </svg>
+          </button>
+          
+          <!-- Селектор материалов -->
+          <div class="material-selector">
+            <label for="materialSelect">Материал:</label>
+            <select id="materialSelect" class="material-select">
+              <option value="default">Обычный</option>
+              <option value="Белый">Белый</option>
+              <option value="Антрацит">Антрацит</option>
+              <option value="Венге">Венге</option>
+              <option value="Дуб Сонома">Дуб Сонома</option>
+            </select>
+            <button class="canvas-btn" id="reloadTextures" title="Перезагрузить текстуры">
+              <svg fill="none" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        
+        <!-- Подсказки для 3D -->
+        <div class="canvas-info" id="canvas3dInfo" style="display: none;">
+          <div>🖱️ Левая кнопка: поворот камеры</div>
+          <div>🎯 Колесо мыши: приближение/отдаление</div>
+          <div>🎮 Редактирование только в 2D режиме</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div id="notification" class="notification">
+    <svg class="notification-icon" fill="none" viewBox="0 0 24 24" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+    </svg>
+    <span class="notification-text"></span>
+  </div>
+  
+  <div id="keyboardHint" class="keyboard-hint">
+    <kbd>←</kbd><kbd>→</kbd> Переместить стойку • 
+    <kbd>↑</kbd><kbd>↓</kbd> Переместить полку • 
+    <kbd>Shift</kbd> + стрелки для быстрого перемещения • 
+    <kbd>Tab</kbd> Следующий • 
+    <kbd>Delete</kbd> Удалить
+  </div>
+
+  <!-- Three.js библиотека -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  
+  <script src="js/config.js"></script>
+  <script src="js/historyManager.js"></script>
+  <script src="js/cabinet.js"></script>
+  <script src="js/resizeHandler.js"></script>
+  <script src="js/renderer.js"></script>
+  <script src="js/renderer3d.js"></script>
+  <script src="js/events.js"></script>
+  
+  <!-- Мобильные модули -->
+  <script src="js/mobile/touchHandler.js"></script>
+  <script src="js/mobile/mobileUIManager.js"></script>
+  
+  <script src="js/app.js"></script>
+  
+  <script>
+    // Инициализация мобильной поддержки
+    document.addEventListener('DOMContentLoaded', function() {
+      if (window.innerWidth <= 768 || 'ontouchstart' in window) {
+        // Инициализируем мобильные модули
+        window.mobileUI = new MobileUIManager();
+        
+        // Ждем инициализации основного приложения
+        const initMobile = () => {
+          if (window.app) {
+            window.touchHandler = new TouchHandler(window.app);
+          } else {
+            setTimeout(initMobile, 100);
+          }
+        };
+        
+        setTimeout(initMobile, 500);
+      }
+    });
+  </script>
+</body>
+</html>

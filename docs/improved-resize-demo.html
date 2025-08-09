@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cabinet Designer - Improved Resize Demo</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f5f5f5;
+      display: flex;
+      height: 100vh;
+    }
+    
+    .controls {
+      width: 300px;
+      background: white;
+      padding: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    
+    .control-group {
+      margin-bottom: 20px;
+    }
+    
+    .control-label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+      color: #333;
+    }
+    
+    .input-field {
+      width: 100%;
+      padding: 8px 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 4px;
+      font-size: 16px;
+      transition: border-color 0.2s;
+    }
+    
+    .input-field:focus {
+      border-color: #007AFF;
+      outline: none;
+    }
+    
+    .canvas-container {
+      flex: 1;
+      position: relative;
+      background: #f0f0f0;
+    }
+    
+    #canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+    
+    .info {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(255,255,255,0.9);
+      padding: 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: monospace;
+    }
+    
+    .btn {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      background: #007AFF;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    
+    .btn:hover {
+      background: #0056b3;
+    }
+    
+    .demo-info {
+      background: #e8f4fd;
+      padding: 15px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    
+    .highlight {
+      background: yellow;
+      padding: 2px 4px;
+      border-radius: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div class="controls">
+    <h2>Cabinet Resize Demo</h2>
+    
+    <div class="demo-info">
+      <strong>Улучшенная логика:</strong><br>
+      • При перетаскивании <span class="highlight">левой</span> стенки - правая остается на месте<br>
+      • При перетаскивании <span class="highlight">правой</span> стенки - левая остается на месте<br>
+      • Аналогично для верха/низа
+    </div>
+    
+    <div class="control-group">
+      <label class="control-label">Ширина (мм)</label>
+      <input type="number" id="width" class="input-field" value="800" min="132" max="2000">
+    </div>
+    
+    <div class="control-group">
+      <label class="control-label">Высота (мм)</label>
+      <input type="number" id="height" class="input-field" value="1800" min="132" max="3000">
+    </div>
+    
+    <div class="control-group">
+      <label class="control-label">Глубина (мм)</label>
+      <input type="number" id="depth" class="input-field" value="500" min="100" max="1000">
+    </div>
+    
+    <div class="control-group">
+      <label class="control-label">Цоколь (мм)</label>
+      <input type="number" id="base" class="input-field" value="100" min="60" max="200">
+    </div>
+    
+    <button class="btn" onclick="applyDimensions()">Применить</button>
+    <button class="btn" onclick="resetView()">Сброс</button>
+  </div>
+  
+  <div class="canvas-container">
+    <canvas id="canvas"></canvas>
+    <div class="info" id="info">
+      Режим: <span id="mode">-</span><br>
+      Стенка: <span id="wall">-</span><br>
+      Размер: <span id="size">-</span>
+    </div>
+  </div>
+
+  <script>
+    // Простая демонстрация улучшенной логики изменения размеров
+    
+    let canvas = document.getElementById('canvas');
+    let ctx = canvas.getContext('2d');
+    let cabinet = { width: 800, height: 1800, depth: 500, base: 100 };
+    let resizeMode = null;
+    let hoveredWall = null;
+    let draggingWall = null;
+    let mouseStart = { x: 0, y: 0 };
+    let transform = { scale: 1, offsetX: 0, offsetY: 0 };
+    let anchorPoint = { x: 0, y: 0 }; // Точка, которая остается неподвижной
+    
+    // Настройка canvas
+    function setupCanvas() {
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+      calculateTransform();
+      render();
+    }
+    
+    // Расчет трансформации для центрирования
+    function calculateTransform() {
+      const padding = 50;
+      const scaleX = (canvas.width - 2 * padding) / cabinet.width;
+      const scaleY = (canvas.height - 2 * padding) / cabinet.height;
+      transform.scale = Math.min(scaleX, scaleY) * 0.8;
+      
+      // При изменении размеров используем якорную точку
+      if (draggingWall) {
+        switch(draggingWall) {
+          case 'left':
+            // Правый край остается на месте
+            transform.offsetX = anchorPoint.x - cabinet.width * transform.scale;
+            transform.offsetY = anchorPoint.y;
+            break;
+          case 'right':
+            // Левый край остается на месте
+            transform.offsetX = anchorPoint.x;
+            transform.offsetY = anchorPoint.y;
+            break;
+          case 'top':
+            // Нижний край остается на месте
+            transform.offsetX = anchorPoint.x;
+            transform.offsetY = anchorPoint.y - cabinet.height * transform.scale;
+            break;
+          case 'bottom':
+            // Верхний край остается на месте
+            transform.offsetX = anchorPoint.x;
+            transform.offsetY = anchorPoint.y;
+            break;
+          default:
+            // Центрирование по умолчанию
+            transform.offsetX = (canvas.width - cabinet.width * transform.scale) / 2;
+            transform.offsetY = (canvas.height - cabinet.height * transform.scale) / 2;
+        }
+      } else {
+        // Центрирование по умолчанию
+        transform.offsetX = (canvas.width - cabinet.width * transform.scale) / 2;
+        transform.offsetY = (canvas.height - cabinet.height * transform.scale) / 2;
+      }
+    }
+    
+    // Отрисовка
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      ctx.save();
+      
+      // Тень
+      ctx.shadowColor = 'rgba(0,0,0,0.1)';
+      ctx.shadowBlur = 20;
+      ctx.shadowOffsetY = 10;
+      
+      // Корпус шкафа
+      ctx.fillStyle = '#f5f5f5';
+      ctx.fillRect(
+        transform.offsetX, 
+        transform.offsetY, 
+        cabinet.width * transform.scale, 
+        cabinet.height * transform.scale
+      );
+      
+      ctx.shadowColor = 'transparent';
+      
+      // Боковины
+      const panelThickness = 16 * transform.scale;
+      
+      // Левая боковина
+      drawPanel(
+        transform.offsetX,
+        transform.offsetY,
+        panelThickness,
+        cabinet.height * transform.scale,
+        'left'
+      );
+      
+      // Правая боковина
+      drawPanel(
+        transform.offsetX + cabinet.width * transform.scale - panelThickness,
+        transform.offsetY,
+        panelThickness,
+        cabinet.height * transform.scale,
+        'right'
+      );
+      
+      // Верх
+      drawPanel(
+        transform.offsetX + panelThickness,
+        transform.offsetY,
+        cabinet.width * transform.scale - 2 * panelThickness,
+        panelThickness,
+        'top'
+      );
+      
+      // Низ
+      drawPanel(
+        transform.offsetX + panelThickness,
+        transform.offsetY + cabinet.height * transform.scale - panelThickness,
+        cabinet.width * transform.scale - 2 * panelThickness,
+        panelThickness,
+        'bottom'
+      );
+      
+      // Цоколь
+      drawPanel(
+        transform.offsetX + panelThickness,
+        transform.offsetY + cabinet.height * transform.scale - cabinet.base * transform.scale,
+        cabinet.width * transform.scale - 2 * panelThickness,
+        cabinet.base * transform.scale,
+        'base'
+      );
+      
+      ctx.restore();
+      
+      // Обновление информации
+      document.getElementById('mode').textContent = resizeMode || '-';
+      document.getElementById('wall').textContent = hoveredWall || '-';
+      document.getElementById('size').textContent = `${cabinet.width}×${cabinet.height}×${cabinet.depth}`;
+    }
+    
+    // Отрисовка панели
+    function drawPanel(x, y, w, h, type) {
+      const isActive = resizeMode && (
+        (resizeMode === 'width' && (type === 'left' || type === 'right')) ||
+        (resizeMode === 'height' && (type === 'top' || type === 'bottom')) ||
+        (resizeMode === 'base' && type === 'base')
+      );
+      
+      const isHovered = hoveredWall === type;
+      const isDragging = draggingWall === type;
+      
+      if (isDragging) {
+        ctx.fillStyle = 'rgba(0, 122, 255, 0.8)';
+      } else if (isHovered && isActive) {
+        ctx.fillStyle = 'rgba(0, 122, 255, 0.6)';
+      } else if (isActive) {
+        ctx.fillStyle = 'rgba(0, 122, 255, 0.3)';
+      } else {
+        ctx.fillStyle = '#ddd';
+      }
+      
+      ctx.fillRect(x, y, w, h);
+      ctx.strokeStyle = '#999';
+      ctx.strokeRect(x, y, w, h);
+    }
+    
+    // Поиск стенки под курсором
+    function getWallAt(x, y) {
+      const tolerance = 15;
+      const panelThickness = 16 * transform.scale;
+      
+      const leftX = transform.offsetX;
+      const rightX = transform.offsetX + cabinet.width * transform.scale;
+      const topY = transform.offsetY;
+      const bottomY = transform.offsetY + cabinet.height * transform.scale;
+      const baseY = transform.offsetY + cabinet.height * transform.scale - cabinet.base * transform.scale;
+      
+      if (resizeMode === 'width') {
+        if (Math.abs(x - leftX) < tolerance && y >= topY && y <= bottomY) {
+          return 'left';
+        }
+        if (Math.abs(x - rightX) < tolerance && y >= topY && y <= bottomY) {
+          return 'right';
+        }
+      } else if (resizeMode === 'height') {
+        if (Math.abs(y - topY) < tolerance && x >= leftX && x <= rightX) {
+          return 'top';
+        }
+        if (Math.abs(y - bottomY) < tolerance && x >= leftX && x <= rightX) {
+          return 'bottom';
+        }
+      } else if (resizeMode === 'base') {
+        if (Math.abs(y - baseY) < tolerance && x >= leftX && x <= rightX) {
+          return 'base';
+        }
+      }
+      
+      return null;
+    }
+    
+    // Обработчики событий
+    canvas.addEventListener('mousemove', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      if (draggingWall) {
+        // Обработка перетаскивания
+        handleDrag(x, y);
+      } else {
+        // Обновление наведения
+        const wall = getWallAt(x, y);
+        if (wall !== hoveredWall) {
+          hoveredWall = wall;
+          canvas.style.cursor = wall ? (resizeMode === 'width' ? 'ew-resize' : 'ns-resize') : 'default';
+          render();
+        }
+      }
+    });
+    
+    canvas.addEventListener('mousedown', (e) => {
+      if (hoveredWall) {
+        const rect = canvas.getBoundingClientRect();
+        mouseStart.x = e.clientX - rect.left;
+        mouseStart.y = e.clientY - rect.top;
+        draggingWall = hoveredWall;
+        
+        // Сохраняем якорную точку (противоположная сторона)
+        switch(draggingWall) {
+          case 'left':
+            anchorPoint.x = transform.offsetX + cabinet.width * transform.scale;
+            anchorPoint.y = transform.offsetY;
+            break;
+          case 'right':
+            anchorPoint.x = transform.offsetX;
+            anchorPoint.y = transform.offsetY;
+            break;
+          case 'top':
+            anchorPoint.x = transform.offsetX;
+            anchorPoint.y = transform.offsetY + cabinet.height * transform.scale;
+            break;
+          case 'bottom':
+            anchorPoint.x = transform.offsetX;
+            anchorPoint.y = transform.offsetY;
+            break;
+        }
+      }
+    });
+    
+    canvas.addEventListener('mouseup', () => {
+      draggingWall = null;
+      calculateTransform(); // Пересчитываем для центрирования
+      render();
+    });
+    
+    canvas.addEventListener('mouseleave', () => {
+      hoveredWall = null;
+      draggingWall = null;
+      canvas.style.cursor = 'default';
+      render();
+    });
+    
+    // Обработка перетаскивания
+    function handleDrag(mouseX, mouseY) {
+      switch(draggingWall) {
+        case 'left':
+          const newWidth = (anchorPoint.x - mouseX) / transform.scale;
+          cabinet.width = Math.max(132, Math.min(2000, newWidth));
+          document.getElementById('width').value = Math.round(cabinet.width);
+          break;
+        case 'right':
+          const newWidthRight = (mouseX - anchorPoint.x) / transform.scale;
+          cabinet.width = Math.max(132, Math.min(2000, newWidthRight));
+          document.getElementById('width').value = Math.round(cabinet.width);
+          break;
+        case 'top':
+          const newHeight = (anchorPoint.y - mouseY) / transform.scale;
+          cabinet.height = Math.max(132, Math.min(3000, newHeight));
+          document.getElementById('height').value = Math.round(cabinet.height);
+          break;
+        case 'bottom':
+          const newHeightBottom = (mouseY - anchorPoint.y) / transform.scale;
+          cabinet.height = Math.max(132, Math.min(3000, newHeightBottom));
+          document.getElementById('height').value = Math.round(cabinet.height);
+          break;
+        case 'base':
+          const distFromBottom = (transform.offsetY + cabinet.height * transform.scale - mouseY) / transform.scale;
+          cabinet.base = Math.max(60, Math.min(200, distFromBottom));
+          document.getElementById('base').value = Math.round(cabinet.base);
+          break;
+      }
+      
+      calculateTransform();
+      render();
+    }
+    
+    // Обработчики полей ввода
+    document.getElementById('width').addEventListener('focus', () => {
+      resizeMode = 'width';
+      render();
+    });
+    
+    document.getElementById('height').addEventListener('focus', () => {
+      resizeMode = 'height';
+      render();
+    });
+    
+    document.getElementById('base').addEventListener('focus', () => {
+      resizeMode = 'base';
+      render();
+    });
+    
+    document.getElementById('depth').addEventListener('focus', () => {
+      resizeMode = null;
+      render();
+    });
+    
+    // Применение размеров
+    function applyDimensions() {
+      cabinet.width = parseInt(document.getElementById('width').value);
+      cabinet.height = parseInt(document.getElementById('height').value);
+      cabinet.depth = parseInt(document.getElementById('depth').value);
+      cabinet.base = parseInt(document.getElementById('base').value);
+      calculateTransform();
+      render();
+    }
+    
+    // Сброс
+    function resetView() {
+      cabinet = { width: 800, height: 1800, depth: 500, base: 100 };
+      document.getElementById('width').value = cabinet.width;
+      document.getElementById('height').value = cabinet.height;
+      document.getElementById('depth').value = cabinet.depth;
+      document.getElementById('base').value = cabinet.base;
+      resizeMode = null;
+      hoveredWall = null;
+      draggingWall = null;
+      calculateTransform();
+      render();
+    }
+    
+    // Инициализация
+    window.addEventListener('resize', setupCanvas);
+    setupCanvas();
+  </script>
+</body>
+</html>
