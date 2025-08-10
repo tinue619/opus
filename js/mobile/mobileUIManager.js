@@ -1,3 +1,136 @@
+/**
+ * Mobile UI Manager v2.0 - Современный мобильный интерфейс
+ * Полностью переработанная версия с Material Design принципами
+ */
+
+class MobileUIManager {
+  constructor() {
+    this.isInitialized = false;
+    this.currentView = '2d';
+    this.activePanel = null;
+    this.activeTool = null;
+    this.fabOpen = false;
+    
+    // Состояния панелей
+    this.panels = {
+      dimensions: false,
+      tools: false,
+      parts: false
+    };
+    
+    // Проверяем, нужно ли инициализировать мобильный интерфейс
+    if (this.isMobile()) {
+      this.init();
+    }
+  }
+
+  init() {
+    if (this.isInitialized) return;
+
+    console.log('Initializing Mobile UI Manager v2.0...');
+    
+    this.setupViewportMeta();
+    this.addMobileStyles();
+    this.createMobileInterface();
+    this.setupEventHandlers();
+    this.setupOrientationHandler();
+    
+    this.isInitialized = true;
+    console.log('Mobile UI Manager v2.0 initialized successfully!');
+  }
+
+  applyDimensions() {
+    const width = document.getElementById('mobileWidth')?.value;
+    const height = document.getElementById('mobileHeight')?.value;
+    const depth = document.getElementById('mobileDepth')?.value;
+    const base = document.getElementById('mobileBase')?.value;
+    
+    // Sync with desktop inputs
+    const desktopInputs = {
+      width: document.getElementById('width'),
+      height: document.getElementById('height'),
+      depth: document.getElementById('depth'),
+      base: document.getElementById('base')
+    };
+    
+    if (desktopInputs.width) desktopInputs.width.value = width;
+    if (desktopInputs.height) desktopInputs.height.value = height;
+    if (desktopInputs.depth) desktopInputs.depth.value = depth;
+    if (desktopInputs.base) desktopInputs.base.value = base;
+    
+    // Trigger apply button
+    const applyBtn = document.getElementById('apply');
+    if (applyBtn) {
+      applyBtn.click();
+      this.showToast('Размеры применены');
+      this.closeActivePanel();
+    }
+  }
+
+  syncDimensionValues() {
+    // Sync values from desktop inputs to mobile inputs
+    const desktopInputs = {
+      width: document.getElementById('width'),
+      height: document.getElementById('height'), 
+      depth: document.getElementById('depth'),
+      base: document.getElementById('base')
+    };
+    
+    const mobileInputs = {
+      width: document.getElementById('mobileWidth'),
+      height: document.getElementById('mobileHeight'),
+      depth: document.getElementById('mobileDepth'),
+      base: document.getElementById('mobileBase')
+    };
+    
+    Object.keys(desktopInputs).forEach(key => {
+      if (desktopInputs[key] && mobileInputs[key]) {
+        mobileInputs[key].value = desktopInputs[key].value;
+      }
+    });
+  }
+
+  exportParts() {
+    if (window.app && window.app.exportParts) {
+      window.app.exportParts();
+      this.showToast('Список деталей экспортирован');
+    } else {
+      // Fallback export
+      this.exportPartsAsText();
+    }
+  }
+
+  exportPartsAsText() {
+    if (!window.app || !window.app.cabinet) return;
+    
+    const parts = window.app.cabinet.getAllParts();
+    let text = 'Список деталей Cabinet Designer\n';
+    text += '================================\n\n';
+    
+    parts.forEach((part, index) => {
+      text += `${index + 1}. ${part.name}\n`;
+      text += `   Размеры: ${Math.round(part.w)} × ${Math.round(part.h)} × ${Math.round(part.d)} мм\n`;
+      text += `   Площадь: ${((part.w * part.h) / 1000000).toFixed(2)} м²\n\n`;
+    });
+    
+    // Calculate totals
+    const totalArea = parts.reduce((sum, part) => {
+      return sum + (part.w * part.h) / 1000000;
+    }, 0);
+    
+    text += `Итого: ${parts.length} деталей\n`;
+    text += `Общая площадь: ${totalArea.toFixed(2)} м²\n`;
+    
+    // Create and download file
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'cabinet_parts.txt';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   toggleView() {
     const view2d = document.getElementById('view2d');
     const view3d = document.getElementById('view3d');
@@ -14,14 +147,20 @@
   }
 
   undo() {
-    if (window.undo) {
+    if (window.app && window.app.undo) {
+      window.app.undo();
+      this.showToast('Действие отменено');
+    } else if (window.undo) {
       window.undo();
       this.showToast('Действие отменено');
     }
   }
 
   redo() {
-    if (window.redo) {
+    if (window.app && window.app.redo) {
+      window.app.redo();
+      this.showToast('Действие повторено');
+    } else if (window.redo) {
       window.redo();
       this.showToast('Действие повторено');
     }
@@ -84,12 +223,73 @@
     }
   }
 
+  setupOrientationHandler() {
+    window.addEventListener('orientationchange', () => {
+      setTimeout(() => {
+        this.handleOrientationChange();
+      }, 100);
+    });
+
+    window.addEventListener('resize', () => {
+      this.handleResize();
+    });
+  }
+
+  handleOrientationChange() {
+    // Принудительно обновляем layout
+    if (window.app && window.app.renderer2d) {
+      window.app.renderer2d.updateCanvas();
+    }
+    
+    this.adjustLayoutForOrientation();
+  }
+
+  handleResize() {
+    // Обновляем canvas при изменении размера
+    setTimeout(() => {
+      if (window.app && window.app.renderer2d) {
+        window.app.renderer2d.updateCanvas();
+      }
+    }, 100);
+  }
+
+  adjustLayoutForOrientation() {
+    // Дополнительные настройки для разных ориентаций
+    const isLandscape = window.innerWidth > window.innerHeight;
+    
+    if (isLandscape) {
+      // Альбомная ориентация - можно показать больше элементов
+      document.body.classList.add('landscape');
+    } else {
+      // Портретная ориентация
+      document.body.classList.remove('landscape');
+    }
+  }
+
   addMobileStyles() {
     if (document.getElementById('mobile-styles-v2')) return;
     
     const style = document.createElement('style');
     style.id = 'mobile-styles-v2';
     style.textContent = `
+      /* CSS переменные для согласованности с основными стилями */
+      :root {
+        --surface-elevated: #ffffff;
+        --separator: #e5e5e7;
+        --text-primary: #1d1d1f;
+        --text-secondary: #6e6e73;
+        --text-tertiary: #86868b;
+        --primary: #007aff;
+        --primary-hover: #0051d5;
+        --primary-light: #e8f4ff;
+        --danger: #ff3b30;
+        --success: #30d158;
+        --surface: #f2f2f7;
+        --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.1);
+        --shadow-xl: 0 8px 32px rgba(0, 0, 0, 0.15);
+      }
+
       /* Мобильный заголовок */
       .mobile-header {
         position: fixed;
@@ -323,6 +523,7 @@
         font-size: 20px;
         font-weight: 600;
         color: var(--text-primary);
+        margin: 0;
       }
 
       .panel-close {

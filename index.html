@@ -295,21 +295,20 @@
   <script>
     // Инициализация мобильной поддержки
     document.addEventListener('DOMContentLoaded', function() {
-      if (window.innerWidth <= 768 || 'ontouchstart' in window) {
-        // Инициализируем мобильные модули
-        window.mobileUI = new MobileUIManager();
-        
-        // Ждем инициализации основного приложения
-        const initMobile = () => {
-          if (window.app) {
-            window.touchHandler = new TouchHandler(window.app);
-          } else {
-            setTimeout(initMobile, 100);
-          }
-        };
-        
-        setTimeout(initMobile, 500);
-      }
+      // Всегда инициализируем мобильный UI (он сам проверит, нужен ли он)
+      window.mobileUI = new MobileUIManager();
+      
+      // Ждем инициализации основного приложения для touch handler
+      const initMobile = () => {
+        if (window.app && window.mobileUI && window.mobileUI.isInitialized) {
+          window.touchHandler = new TouchHandler(window.app);
+          console.log('Touch handler initialized');
+        } else {
+          setTimeout(initMobile, 100);
+        }
+      };
+      
+      setTimeout(initMobile, 500);
     });
   </script>
 </body>
