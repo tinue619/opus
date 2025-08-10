@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Cabinet Designer Mobile</title>
+  <link rel="stylesheet" href="../css/styles.css">
+  <style>
+    /* Скрываем десктопный сайдбар полностью */
+    .sidebar {
+      display: none !important;
+    }
+    
+    /* Растягиваем main-content на весь экран */
+    .main-content {
+      width: 100vw !important;
+      height: 100vh !important;
+    }
+    
+    /* Скрываем десктопную панель инструментов */
+    .toolbar {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Оригинальный сайдбар (скрыт на мобильных) -->
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <div class="logo-icon">
+            <svg fill="none" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m21 7.5-9-5.25L3 7.5m18 0-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
+            </svg>
+          </div>
+          <div class="logo-text">
+            <h1>Cabinet Designer</h1>
+            <p>Создайте идеальную мебель</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="sidebar-content">
+        <div class="control-group">
+          <label class="control-label">Ширина</label>
+          <div class="input-wrapper">
+            <input type="number" id="width" class="input-field" value="800" min="132" max="2000">
+            <span class="input-unit">мм</span>
+          </div>
+        </div>
+        
+        <div class="control-group">
+          <label class="control-label">Высота</label>
+          <div class="input-wrapper">
+            <input type="number" id="height" class="input-field" value="1800" min="132" max="3000">
+            <span class="input-unit">мм</span>
+          </div>
+        </div>
+        
+        <div class="control-group">
+          <label class="control-label">Глубина</label>
+          <div class="input-wrapper">
+            <input type="number" id="depth" class="input-field" value="500" min="100" max="1000">
+            <span class="input-unit">мм</span>
+          </div>
+        </div>
+        
+        <div class="control-group">
+          <label class="control-label">Цоколь</label>
+          <div class="input-wrapper">
+            <input type="number" id="base" class="input-field" value="100" min="60" max="200">
+            <span class="input-unit">мм</span>
+          </div>
+        </div>
+        
+        <button id="apply" class="btn btn-primary">Применить</button>
+      </div>
+    </div>
+    
+    <div class="main-content">
+      <div class="canvas-container cabinet-colors">
+        <canvas id="canvas"></canvas>
+        <canvas id="canvas3d" style="display: none;"></canvas>
+      </div>
+    </div>
+  </div>
+  
+  <div id="notification" class="notification">
+    <svg class="notification-icon" fill="none" viewBox="0 0 24 24" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+    </svg>
+    <span class="notification-text"></span>
+  </div>
+
+  <!-- Three.js библиотека -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  
+  <script src="../js/config.js"></script>
+  <script src="../js/historyManager.js"></script>
+  <script src="../js/cabinet.js"></script>
+  <script src="../js/resizeHandler.js"></script>
+  <script src="../js/renderer.js"></script>
+  <script src="../js/renderer3d.js"></script>
+  <script src="../js/events.js"></script>
+  
+  <!-- Мобильные модули -->
+  <script src="../js/mobile/touchHandler.js"></script>
+  <script src="../js/mobile/mobileUIManager2.js"></script>
+  
+  <script src="../js/app.js"></script>
+  
+  <script>
+    // Инициализация мобильной поддержки
+    document.addEventListener('DOMContentLoaded', function() {
+      // Всегда используем мобильный интерфейс на этой странице
+      console.log('Initializing mobile interface...');
+      window.mobileUI = new MobileUIManager();
+      
+      // Ждем инициализации основного приложения
+      const initMobile = () => {
+        if (window.app) {
+          console.log('App initialized, setting up touch handler...');
+          window.touchHandler = new TouchHandler(window.app);
+        } else {
+          setTimeout(initMobile, 100);
+        }
+      };
+      
+      setTimeout(initMobile, 500);
+    });
+  </script>
+</body>
+</html>
