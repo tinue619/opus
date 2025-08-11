@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Cabinet Designer Mobile v3 - Instagram Style</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f7;
+            min-height: 100vh;
+        }
+        
+        .test-container {
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .demo-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 2px 16px rgba(0, 0, 0, 0.1);
+        }
+        
+        .demo-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #000;
+            margin-bottom: 8px;
+        }
+        
+        .demo-subtitle {
+            font-size: 16px;
+            color: #8e8e93;
+            margin-bottom: 16px;
+        }
+        
+        .version-badge {
+            display: inline-block;
+            background: linear-gradient(45deg, #007aff, #34aadc);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .test-section {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 16px rgba(0, 0, 0, 0.1);
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #000;
+        }
+        
+        .test-btn {
+            background: #007aff;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 14px 20px;
+            margin: 8px 8px 8px 0;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 120px;
+        }
+        
+        .test-btn:active {
+            background: #0056b3;
+            transform: scale(0.95);
+        }
+        
+        .test-btn.secondary {
+            background: #f8f9fa;
+            color: #007aff;
+            border: 1px solid rgba(0, 122, 255, 0.2);
+        }
+        
+        .test-btn.secondary:active {
+            background: #e9ecef;
+        }
+        
+        .mock-canvas {
+            width: 100%;
+            height: 300px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+            margin: 16px 0;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .mock-canvas::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 10px,
+                rgba(255,255,255,0.1) 10px,
+                rgba(255,255,255,0.1) 20px
+            );
+        }
+        
+        .status {
+            background: #f8f9fa;
+            padding: 16px;
+            border-radius: 12px;
+            margin-top: 16px;
+            font-size: 14px;
+            border-left: 4px solid #007aff;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+        }
+        
+        .feature-card {
+            background: #f8f9fa;
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        
+        .feature-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        
+        .feature-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #000;
+            margin-bottom: 4px;
+        }
+        
+        .feature-desc {
+            font-size: 12px;
+            color: #8e8e93;
+        }
+        
+        .swipe-demo {
+            background: linear-gradient(90deg, #ff6b6b, #4ecdc4);
+            color: white;
+            padding: 20px;
+            border-radius: 16px;
+            text-align: center;
+            margin: 16px 0;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .swipe-demo::after {
+            content: '← Свайп →';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 20px;
+            font-weight: 700;
+            opacity: 0.7;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
+        }
+        
+        .instagram-hint {
+            background: linear-gradient(45deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%);
+            color: white;
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="demo-header">
+            <div class="demo-title">Cabinet Designer Mobile</div>
+            <div class="demo-subtitle">Интерфейс в стиле Instagram</div>
+            <div class="version-badge">v3.0 Instagram Style</div>
+        </div>
+        
+        <div class="instagram-hint">
+            📱 Теперь с интерфейсом как в Instagram! Выдвижная панель снизу и свайп-жесты для переключения видов.
+        </div>
+        
+        <div class="test-section">
+            <div class="section-title">🎛️ Управление</div>
+            <button class="test-btn" onclick="initMobile()">Инициализировать UI</button>
+            <button class="test-btn secondary" onclick="destroyMobile()">Скрыть UI</button>
+            <div id="mobileStatus" class="status">Готов к инициализации...</div>
+        </div>
+        
+        <div class="test-section">
+            <div class="section-title">🧪 Тестирование функций</div>
+            <button class="test-btn" onclick="testToast()">Toast уведомление</button>
+            <button class="test-btn" onclick="testDimensions()">Изменить размеры</button>
+            <button class="test-btn" onclick="testAddElement()">Добавить элемент</button>
+            <button class="test-btn" onclick="testViewSwitch()">Переключить вид</button>
+        </div>
+        
+        <div class="test-section">
+            <div class="section-title">📱 Демо область с жестами</div>
+            <div id="mockCanvas" class="mock-canvas">
+                <span style="position: relative; z-index: 1;">Тестовая область для свайпов</span>
+            </div>
+            <div class="swipe-demo" id="swipeDemo">
+                Попробуйте свайп влево/вправо для переключения 2D/3D
+            </div>
+            <div id="gestureInfo" class="status">Жесты: ожидание</div>
+        </div>
+        
+        <div class="test-section">
+            <div class="section-title">✨ Основные возможности</div>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🏠</div>
+                    <div class="feature-title">5 вкладок</div>
+                    <div class="feature-desc">Как в Instagram</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⬆️</div>
+                    <div class="feature-title">Выдвижная панель</div>
+                    <div class="feature-desc">Снизу вверх</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">👆</div>
+                    <div class="feature-title">Свайп жесты</div>
+                    <div class="feature-desc">2D ↔ 3D режим</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎨</div>
+                    <div class="feature-title">Современный дизайн</div>
+                    <div class="feature-desc">Blur эффекты</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <div class="section-title">📱 Информация об устройстве</div>
+            <div id="deviceInfo" class="status"></div>
+        </div>
+    </div>
+
+    <!-- Подключаем мобильный интерфейс -->
+    <script src="js/mobile/mobileUIManager.js"></script>
+    <script src="js/mobile/touchHandler.js"></script>
+    
+    <script>
+        let mobileUI = null;
+        let swipeStartX = 0;
+
+        // Мок объект app для тестирования
+        window.app = {
+            cabinet: {
+                parts: [
+                    {type: 'shelf'}, {type: 'shelf'}, {type: 'shelf'},
+                    {type: 'stand'}, {type: 'stand'},
+                    {type: 'rod'}
+                ],
+                getState: () => ({mock: true}),
+                setState: () => {}
+            },
+            mode: 'none',
+            scale: 1,
+            targetScale: 1,
+            offsetX: 0,
+            offsetY: 0
+        };
+
+        // Мок функции
+        window.setMode = (mode) => {
+            window.app.mode = mode;
+            updateStatus(`Режим установлен: ${mode}`);
+        };
+
+        window.applyDimensions = () => {
+            updateStatus('Размеры применены');
+        };
+
+        window.render = () => {
+            updateStatus('Рендер вызван');
+        };
+
+        window.historyManager = {
+            canUndo: () => true,
+            canRedo: () => false,
+            undo: () => ({mock: true}),
+            redo: () => ({mock: true})
+        };
+
+        // Мок элементы DOM
+        document.addEventListener('DOMContentLoaded', function() {
+            // Создаем мок элементы для тестирования
+            const mockElements = {
+                'view2d': {classList: {contains: () => true, add: () => {}, remove: () => {}}, click: () => updateStatus('2D вид активирован')},
+                'view3d': {classList: {contains: () => false, add: () => {}, remove: () => {}}, click: () => updateStatus('3D вид активирован')},
+                'width': {value: '800'},
+                'height': {value: '1800'},
+                'depth': {value: '500'},
+                'undo': {disabled: false, click: () => updateStatus('Отмена')},
+                'redo': {disabled: true, click: () => updateStatus('Повтор')},
+                'reset': {click: () => updateStatus('Сброс')},
+                'toggleDimensions': {click: () => updateStatus('Размеры переключены')},
+                'canvas': document.getElementById('mockCanvas')
+            };
+
+            // Добавляем мок getElementById
+            const originalGetElementById = document.getElementById;
+            document.getElementById = function(id) {
+                return mockElements[id] || originalGetElementById.call(document, id);
+            };
+        });
+
+        function updateStatus(message) {
+            const status = document.getElementById('mobileStatus');
+            if (status) {
+                status.innerHTML = `
+                    <strong>${new Date().toLocaleTimeString()}</strong><br>
+                    ${message}
+                `;
+            }
+        }
+
+        function initMobile() {
+            try {
+                if (mobileUI) {
+                    mobileUI.destroy();
+                }
+                
+                mobileUI = new MobileUIManager();
+                updateStatus('✅ Instagram-style мобильный UI активирован!<br>Попробуйте нажать на иконки внизу экрана.');
+                
+                // Настраиваем демо свайпы
+                setupDemoSwipes();
+                
+            } catch (error) {
+                updateStatus('❌ Ошибка: ' + error.message);
+            }
+        }
+
+        function destroyMobile() {
+            if (mobileUI) {
+                mobileUI.destroy();
+                mobileUI = null;
+                updateStatus('UI скрыт');
+            }
+        }
+
+        function testToast() {
+            if (mobileUI) {
+                mobileUI.showToast('🎉 Instagram-style Toast уведомление!');
+            } else {
+                alert('Сначала инициализируйте мобильный UI');
+            }
+        }
+
+        function testDimensions() {
+            if (mobileUI) {
+                // Эмулируем клик по вкладке размеров
+                const dimensionsTab = document.querySelector('.nav-tab[data-tab="dimensions"]');
+                if (dimensionsTab) {
+                    dimensionsTab.click();
+                    updateStatus('Панель размеров открыта');
+                } else {
+                    mobileUI.showToast('Сначала откройте вкладку "Размеры"');
+                }
+            } else {
+                alert('Сначала инициализируйте мобильный UI');
+            }
+        }
+
+        function testAddElement() {
+            if (mobileUI) {
+                mobileUI.addElement('shelf');
+            } else {
+                alert('Сначала инициализируйте мобильный UI');
+            }
+        }
+
+        function testViewSwitch() {
+            if (mobileUI) {
+                if (mobileUI.currentView === '2d') {
+                    mobileUI.switchTo3D();
+                } else {
+                    mobileUI.switchTo2D();
+                }
+            } else {
+                alert('Сначала инициализируйте мобильный UI');
+            }
+        }
+
+        function setupDemoSwipes() {
+            const swipeDemo = document.getElementById('swipeDemo');
+            const gestureInfo = document.getElementById('gestureInfo');
+            
+            if (!swipeDemo) return;
+            
+            swipeDemo.addEventListener('touchstart', (e) => {
+                swipeStartX = e.touches[0].clientX;
+                gestureInfo.textContent = 'Касание начато...';
+            });
+            
+            swipeDemo.addEventListener('touchend', (e) => {
+                const endX = e.changedTouches[0].clientX;
+                const deltaX = endX - swipeStartX;
+                
+                if (Math.abs(deltaX) > 50) {
+                    if (deltaX > 0) {
+                        gestureInfo.textContent = '✅ Свайп вправо! (→ 3D режим)';
+                        if (mobileUI) mobileUI.switchTo3D();
+                    } else {
+                        gestureInfo.textContent = '✅ Свайп влево! (← 2D режим)';
+                        if (mobileUI) mobileUI.switchTo2D();
+                    }
+                } else {
+                    gestureInfo.textContent = 'Слишком короткий свайп. Попробуйте еще раз.';
+                }
+            });
+        }
+
+        function updateDeviceInfo() {
+            const info = document.getElementById('deviceInfo');
+            if (info) {
+                const isMobile = window.innerWidth <= 768 || 'ontouchstart' in window;
+                info.innerHTML = `
+                    <strong>Экран:</strong> ${window.innerWidth} × ${window.innerHeight}px<br>
+                    <strong>Касания:</strong> ${'ontouchstart' in window ? 'Поддерживаются ✅' : 'Не поддерживаются ❌'}<br>
+                    <strong>Мобильное устройство:</strong> ${isMobile ? 'Да ✅' : 'Нет (эмуляция) 📱'}<br>
+                    <strong>Браузер:</strong> ${navigator.userAgent.split(' ')[0]}
+                `;
+            }
+        }
+
+        // Инициализация при загрузке
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDeviceInfo();
+            updateStatus('Готов к тестированию Instagram-style интерфейса');
+            
+            // Автоматически инициализируем на мобильных устройствах
+            if (window.innerWidth <= 768) {
+                setTimeout(initMobile, 500);
+            }
+        });
+
+        // Обновляем информацию при изменении размеров
+        window.addEventListener('resize', updateDeviceInfo);
+    </script>
+</body>
+</html>
