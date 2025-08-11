@@ -137,6 +137,52 @@ class MobileUIManager {
         justify-content: center;
         cursor: pointer;
         box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s ease;
+      }
+
+      .fab-main:active {
+        transform: scale(0.95);
+      }
+
+      .fab-menu {
+        position: absolute;
+        bottom: 70px;
+        right: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        animation: slideUp 0.3s ease;
+      }
+
+      .fab-item {
+        padding: 12px 16px;
+        background: white;
+        border: 1px solid #e5e5e7;
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 500;
+        color: #1d1d1f;
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        transition: all 0.2s ease;
+        white-space: nowrap;
+      }
+
+      .fab-item:hover {
+        background: #007aff;
+        color: white;
+        transform: translateX(-4px);
+      }
+
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px) scale(0.8);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
       }
 
       .mobile-toast {
@@ -170,7 +216,11 @@ class MobileUIManager {
           display: none !important;
         }
 
-        .canvas-container {
+        .sidebar {
+          display: none !important;
+        }
+
+        body {
           padding-top: 56px !important;
           padding-bottom: 64px !important;
         }
@@ -193,12 +243,6 @@ class MobileUIManager {
     
     if (sidebar) sidebar.style.display = 'none';
     if (toolbar) toolbar.style.display = 'none';
-    
-    const canvasContainer = document.querySelector('.canvas-container');
-    if (canvasContainer) {
-      canvasContainer.style.paddingTop = '56px';
-      canvasContainer.style.paddingBottom = '64px';
-    }
   }
 
   createMobileHeader() {
@@ -263,7 +307,81 @@ class MobileUIManager {
     });
     e.currentTarget.classList.add('active');
     
-    this.showToast(`Открыта панель: ${panel}`);
+    // Обрабатываем клики по навигации
+    switch (panel) {
+      case 'home':
+        this.showToast('Главная страница');
+        break;
+      case 'dimensions':
+        this.openDimensionsDialog();
+        break;
+      case 'tools':
+        this.showToolsMenu();
+        break;
+      case 'parts':
+        this.showPartsInfo();
+        break;
+      default:
+        this.showToast(`Открыта панель: ${panel}`);
+    }
+  }
+
+  openDimensionsDialog() {
+    // Простое окно для изменения размеров
+    const width = prompt('Введите ширину (мм):', '800');
+    const height = prompt('Введите высоту (мм):', '1800');
+    const depth = prompt('Введите глубину (мм):', '500');
+    
+    if (width && height && depth) {
+      this.applyDimensions(width, height, depth);
+    }
+  }
+
+  applyDimensions(width, height, depth) {
+    // Пробуем применить размеры
+    const inputs = {
+      width: document.getElementById('width'),
+      height: document.getElementById('height'),
+      depth: document.getElementById('depth')
+    };
+    
+    if (inputs.width) inputs.width.value = width;
+    if (inputs.height) inputs.height.value = height;
+    if (inputs.depth) inputs.depth.value = depth;
+    
+    // Пробуем нажать кнопку применить
+    const applyBtn = document.getElementById('apply') || document.querySelector('[onclick*="apply"]');
+    if (applyBtn) {
+      applyBtn.click();
+      this.showToast('Размеры применены');
+    } else {
+      this.showToast(`Размеры установлены: ${width}x${height}x${depth}`);
+    }
+  }
+
+  showToolsMenu() {
+    const tools = [
+      'Редактировать',
+      'Удалить',
+      'Показать размеры',
+      'Сбросить'
+    ];
+    
+    const selectedTool = prompt('Выберите инструмент:\n' + tools.map((tool, i) => `${i+1}. ${tool}`).join('\n'));
+    
+    if (selectedTool >= 1 && selectedTool <= tools.length) {
+      this.showToast(`Выбран: ${tools[selectedTool-1]}`);
+    }
+  }
+
+  showPartsInfo() {
+    // Пробуем получить информацию о деталях
+    if (window.app && window.app.cabinet && window.app.cabinet.getAllParts) {
+      const parts = window.app.cabinet.getAllParts();
+      this.showToast(`Деталей: ${parts.length}`);
+    } else {
+      this.showToast('Список деталей');
+    }
   }
 
   toggleView() {
@@ -282,21 +400,164 @@ class MobileUIManager {
   }
 
   undo() {
+    // Пробуем разные способы отмены
     if (window.app && window.app.undo) {
       window.app.undo();
+      this.showToast('Действие отменено');
+      return;
     }
-    this.showToast('Отменено');
+    
+    if (window.undo) {
+      window.undo();
+      this.showToast('Действие отменено');
+      return;
+    }
+    
+    // Пробуем найти кнопку отмены
+    const undoBtn = document.getElementById('undo') || document.querySelector('[title*="Отменить"]');
+    if (undoBtn) {
+      undoBtn.click();
+      this.showToast('Действие отменено');
+      return;
+    }
+    
+    this.showToast('Отмена недоступна');
   }
 
   redo() {
+    // Пробуем разные способы повтора
     if (window.app && window.app.redo) {
       window.app.redo();
+      this.showToast('Действие повторено');
+      return;
     }
-    this.showToast('Повторено');
+    
+    if (window.redo) {
+      window.redo();
+      this.showToast('Действие повторено');
+      return;
+    }
+    
+    // Пробуем найти кнопку повтора
+    const redoBtn = document.getElementById('redo') || document.querySelector('[title*="Повторить"]');
+    if (redoBtn) {
+      redoBtn.click();
+      this.showToast('Действие повторено');
+      return;
+    }
+    
+    this.showToast('Повтор недоступен');
   }
 
   toggleFab() {
-    this.showToast('FAB нажата');
+    this.fabOpen = !this.fabOpen;
+    const fab = document.querySelector('.mobile-fab');
+    
+    if (this.fabOpen) {
+      this.showFabMenu();
+    } else {
+      this.hideFabMenu();
+    }
+  }
+
+  showFabMenu() {
+    // Создаем меню с опциями
+    const menu = document.createElement('div');
+    menu.className = 'fab-menu';
+    menu.innerHTML = `
+      <button class="fab-item" data-action="addShelf">+ Полка</button>
+      <button class="fab-item" data-action="addStand">+ Стойка</button>
+      <button class="fab-item" data-action="addRod">+ Штанга</button>
+    `;
+    
+    const fab = document.querySelector('.mobile-fab');
+    fab.appendChild(menu);
+    
+    // Добавляем обработчики
+    menu.querySelectorAll('.fab-item').forEach(item => {
+      item.addEventListener('click', (e) => this.handleFabAction(e));
+    });
+  }
+
+  hideFabMenu() {
+    const menu = document.querySelector('.fab-menu');
+    if (menu) {
+      menu.remove();
+    }
+  }
+
+  handleFabAction(e) {
+    const action = e.currentTarget.dataset.action;
+    
+    switch (action) {
+      case 'addShelf':
+        this.addElement('shelf');
+        break;
+      case 'addStand':
+        this.addElement('stand');
+        break;
+      case 'addRod':
+        this.addElement('rod');
+        break;
+    }
+    
+    this.hideFabMenu();
+    this.fabOpen = false;
+  }
+
+  addElement(type) {
+    // Пробуем разные способы добавления элементов
+    
+    // Способ 1: через window.app
+    if (window.app && window.app.setAddMode) {
+      window.app.setAddMode(type);
+      this.showToast(`Режим добавления ${this.getTypeName(type)} активирован`);
+      return;
+    }
+    
+    // Способ 2: через прямые методы
+    if (type === 'shelf' && window.addShelf) {
+      window.addShelf();
+      this.showToast('Полка добавлена');
+      return;
+    }
+    
+    if (type === 'stand' && window.addStand) {
+      window.addStand();
+      this.showToast('Стойка добавлена');
+      return;
+    }
+    
+    if (type === 'rod' && window.addRod) {
+      window.addRod();
+      this.showToast('Штанга добавлена');
+      return;
+    }
+    
+    // Способ 3: через кнопки интерфейса
+    const addButtons = {
+      'shelf': document.getElementById('addShelf'),
+      'stand': document.getElementById('addStand'), 
+      'rod': document.getElementById('addRod')
+    };
+    
+    if (addButtons[type]) {
+      addButtons[type].click();
+      this.showToast(`${this.getTypeName(type)} добавлена`);
+      return;
+    }
+    
+    // Если ничего не сработало
+    this.showToast(`Не удалось добавить ${this.getTypeName(type)}`);
+  }
+
+  getTypeName(type) {
+    const names = {
+      'shelf': 'полка',
+      'stand': 'стойка', 
+      'rod': 'штанга'
+    };
+    return names[type] || type;
   }
 
   showToast(message, duration = 3000) {
@@ -318,16 +579,6 @@ class MobileUIManager {
         }
       }, 300);
     }, duration);
-  }
-
-  setupOrientationHandler() {
-    window.addEventListener('orientationchange', () => {
-      setTimeout(() => {
-        if (window.app && window.app.renderer2d) {
-          window.app.renderer2d.updateCanvas();
-        }
-      }, 100);
-    });
   }
 
   destroy() {

@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Cabinet Designer Mobile - Тест</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f7;
+        }
+        
+        .test-container {
+            padding: 20px;
+        }
+        
+        .test-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .test-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .test-btn {
+            background: #007aff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 20px;
+            margin: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        
+        .test-btn:active {
+            background: #0056b3;
+        }
+        
+        .mock-canvas {
+            width: 100%;
+            height: 300px;
+            background: #e8e8ed;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6e6e73;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        
+        .status {
+            background: #f2f2f7;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Cabinet Designer Mobile</h1>
+        <p>Тестирование мобильного интерфейса</p>
+        
+        <div class="test-section">
+            <div class="test-title">Состояние мобильного UI</div>
+            <div id="mobileStatus" class="status">Инициализация...</div>
+            <button class="test-btn" onclick="initMobile()">Инициализировать</button>
+            <button class="test-btn" onclick="destroyMobile()">Уничтожить</button>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">Тестовые функции</div>
+            <button class="test-btn" onclick="testToast()">Показать Toast</button>
+            <button class="test-btn" onclick="testDimensions()">Тест размеров</button>
+            <button class="test-btn" onclick="testAddElement()">Добавить элемент</button>
+            <button class="test-btn" onclick="testToggleView()">Переключить вид</button>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">Мок Canvas для тестирования</div>
+            <div id="mockCanvas" class="mock-canvas">
+                Тестовая область для жестов
+            </div>
+            <div id="gestureInfo" class="status">Жесты: не отслеживаются</div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">Информация о устройстве</div>
+            <div id="deviceInfo" class="status"></div>
+        </div>
+    </div>
+
+    <!-- Подключаем мобильные модули -->
+    <script src="js/mobile/mobileUIManager.js"></script>
+    <script src="js/mobile/touchHandler.js"></script>
+    
+    <script>
+        let mobileUI = null;
+        let touchHandler = null;
+
+        // Мок объект app для тестирования
+        window.app = {
+            cabinet: {
+                parts: [],
+                getState: () => ({}),
+                setState: () => {}
+            },
+            mode: 'none',
+            scale: 1,
+            targetScale: 1,
+            offsetX: 0,
+            offsetY: 0
+        };
+
+        // Мок функции
+        window.setMode = (mode) => {
+            window.app.mode = mode;
+            updateStatus(`Режим установлен: ${mode}`);
+        };
+
+        window.applyDimensions = () => {
+            updateStatus('Размеры применены (мок)');
+        };
+
+        window.render = () => {
+            updateStatus('Рендер вызван (мок)');
+        };
+
+        window.historyManager = {
+            canUndo: () => true,
+            canRedo: () => false,
+            undo: () => ({ mock: true }),
+            redo: () => ({ mock: true })
+        };
+
+        function updateStatus(message) {
+            const status = document.getElementById('mobileStatus');
+            if (status) {
+                status.textContent = new Date().toLocaleTimeString() + ': ' + message;
+            }
+        }
+
+        function initMobile() {
+            try {
+                if (mobileUI) {
+                    mobileUI.destroy();
+                }
+                
+                mobileUI = new MobileUIManager();
+                updateStatus('Мобильный UI инициализирован');
+                
+                // Инициализируем touch handler для мок canvas
+                const mockCanvas = document.getElementById('mockCanvas');
+                if (mockCanvas && !mockCanvas.touchHandlerAttached) {
+                    mockCanvas.touchHandlerAttached = true;
+                    
+                    mockCanvas.addEventListener('touchstart', (e) => {
+                        document.getElementById('gestureInfo').textContent = 'Касание начато';
+                    });
+                    
+                    mockCanvas.addEventListener('touchmove', (e) => {
+                        document.getElementById('gestureInfo').textContent = 'Касание перемещается';
+                    });
+                    
+                    mockCanvas.addEventListener('touchend', (e) => {
+                        document.getElementById('gestureInfo').textContent = 'Касание завершено';
+                    });
+                }
+                
+            } catch (error) {
+                updateStatus('Ошибка: ' + error.message);
+            }
+        }
+
+        function destroyMobile() {
+            if (mobileUI) {
+                mobileUI.destroy();
+                mobileUI = null;
+                updateStatus('Мобильный UI уничтожен');
+            }
+        }
+
+        function testToast() {
+            if (mobileUI) {
+                mobileUI.showToast('Тестовое сообщение Toast!');
+            } else {
+                alert('Мобильный UI не инициализирован');
+            }
+        }
+
+        function testDimensions() {
+            if (mobileUI) {
+                mobileUI.openDimensionsDialog();
+            } else {
+                alert('Мобильный UI не инициализирован');
+            }
+        }
+
+        function testAddElement() {
+            if (mobileUI) {
+                mobileUI.addElement('shelf');
+            } else {
+                alert('Мобильный UI не инициализирован');
+            }
+        }
+
+        function testToggleView() {
+            if (mobileUI) {
+                mobileUI.toggleView();
+            } else {
+                alert('Мобильный UI не инициализирован');
+            }
+        }
+
+        function updateDeviceInfo() {
+            const info = document.getElementById('deviceInfo');
+            if (info) {
+                info.innerHTML = `
+                    Ширина экрана: ${window.innerWidth}px<br>
+                    Высота экрана: ${window.innerHeight}px<br>
+                    Поддержка касаний: ${'ontouchstart' in window ? 'Да' : 'Нет'}<br>
+                    User Agent: ${navigator.userAgent.substring(0, 50)}...
+                `;
+            }
+        }
+
+        // Инициализация при загрузке
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDeviceInfo();
+            
+            // Автоматически инициализируем мобильный UI
+            setTimeout(() => {
+                initMobile();
+            }, 500);
+        });
+
+        // Обновляем информацию при изменении размеров
+        window.addEventListener('resize', updateDeviceInfo);
+    </script>
+</body>
+</html>

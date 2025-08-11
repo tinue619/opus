@@ -1,422 +1,237 @@
 /**
- * Touch Handler для мобильных устройств
+ * Touch Handler для Cabinet Designer
+ * Обрабатывает жесты и сенсорные взаимодействия на мобильных устройствах
  */
 
 class TouchHandler {
   constructor(app) {
     this.app = app;
-    this.touchData = {
+    this.canvas = document.getElementById('canvas');
+    this.isTouch = 'ontouchstart' in window;
+    
+    this.touchState = {
+      touching: false,
       startX: 0,
       startY: 0,
-      currentX: 0,
-      currentY: 0,
-      isDragging: false,
-      touchTarget: null,
-      touchTime: 0
+      lastX: 0,
+      lastY: 0,
+      startTime: 0,
+      moved: false
     };
-    
-    this.initTouchEvents();
-    this.setupMobileUI();
+
+    this.pinchState = {
+      active: false,
+      startDistance: 0,
+      startScale: 1
+    };
+
+    if (this.isTouch && this.canvas) {
+      this.init();
+    }
   }
 
-  initTouchEvents() {
-    const canvas = document.getElementById('canvas');
-    if (!canvas) return;
-
-    // Предотвращаем стандартные touch-жесты
-    canvas.addEventListener('touchstart', this.handleTouchStart.bind(this), { passive: false });
-    canvas.addEventListener('touchmove', this.handleTouchMove.bind(this), { passive: false });
-    canvas.addEventListener('touchend', this.handleTouchEnd.bind(this), { passive: false });
-    canvas.addEventListener('touchcancel', this.handleTouchEnd.bind(this), { passive: false });
-
-    // Предотвращаем zoom и другие стандартные жесты
-    document.addEventListener('touchmove', (e) => {
-      if (e.touches.length > 1) {
-        e.preventDefault();
-      }
-    }, { passive: false });
-
-    // Предотвращаем контекстное меню на длительное нажатие
-    canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+  init() {
+    console.log('Initializing Touch Handler...');
+    
+    // Отключаем стандартные жесты браузера
+    this.canvas.style.touchAction = 'none';
+    
+    // Добавляем обработчики событий
+    this.canvas.addEventListener('touchstart', this.handleTouchStart.bind(this), { passive: false });
+    this.canvas.addEventListener('touchmove', this.handleTouchMove.bind(this), { passive: false });
+    this.canvas.addEventListener('touchend', this.handleTouchEnd.bind(this), { passive: false });
+    this.canvas.addEventListener('touchcancel', this.handleTouchEnd.bind(this), { passive: false });
+    
+    console.log('Touch Handler initialized successfully');
   }
 
   handleTouchStart(e) {
     e.preventDefault();
     
-    const touch = e.touches[0];
-    const rect = e.target.getBoundingClientRect();
+    const touches = e.touches;
     
-    this.touchData = {
-      startX: touch.clientX - rect.left,
-      startY: touch.clientY - rect.top,
-      currentX: touch.clientX - rect.left,
-      currentY: touch.clientY - rect.top,
-      isDragging: false,
-      touchTarget: null,
-      touchTime: Date.now()
-    };
-
-    // Проверяем, есть ли элемент под касанием
-    if (this.app.renderer2d) {
-      this.touchData.touchTarget = this.app.renderer2d.getElementAt(
-        this.touchData.startX, 
-        this.touchData.startY
-      );
-    }
-
-    // Если это разделитель, начинаем перетаскивание
-    if (this.touchData.touchTarget && this.touchData.touchTarget.type === 'divider') {
-      this.touchData.isDragging = true;
-      this.showHapticFeedback();
+    if (touches.length === 1) {
+      // Одиночное касание
+      this.touchState.touching = true;
+      this.touchState.startX = touches[0].clientX;
+      this.touchState.startY = touches[0].clientY;
+      this.touchState.lastX = touches[0].clientX;
+      this.touchState.lastY = touches[0].clientY;
+      this.touchState.startTime = Date.now();
+      this.touchState.moved = false;
+      
+    } else if (touches.length === 2) {
+      // Пинч для масштабирования
+      this.pinchState.active = true;
+      this.pinchState.startDistance = this.getDistance(touches[0], touches[1]);
+      this.pinchState.startScale = this.app.scale || 1;
     }
   }
 
   handleTouchMove(e) {
     e.preventDefault();
     
-    if (e.touches.length !== 1) return;
+    const touches = e.touches;
     
-    const touch = e.touches[0];
-    const rect = e.target.getBoundingClientRect();
-    
-    this.touchData.currentX = touch.clientX - rect.left;
-    this.touchData.currentY = touch.clientY - rect.top;
-
-    // Если перетаскиваем разделитель
-    if (this.touchData.isDragging && this.touchData.touchTarget) {
-      this.handleDividerDrag();
-    } else {
-      // Обычное наведение для добавления элементов
-      this.handleHover();
+    if (touches.length === 1 && this.touchState.touching && !this.pinchState.active) {
+      // Одиночное перемещение
+      const currentX = touches[0].clientX;
+      const currentY = touches[0].clientY;
+      
+      const deltaX = currentX - this.touchState.lastX;
+      const deltaY = currentY - this.touchState.lastY;
+      
+      // Проверяем, началось ли движение
+      if (!this.touchState.moved) {
+        const totalDelta = Math.abs(currentX - this.touchState.startX) + Math.abs(currentY - this.touchState.startY);
+        if (totalDelta > 10) {
+          this.touchState.moved = true;
+        }
+      }
+      
+      if (this.touchState.moved) {
+        this.handlePan(deltaX, deltaY);
+      }
+      
+      this.touchState.lastX = currentX;
+      this.touchState.lastY = currentY;
+      
+    } else if (touches.length === 2 && this.pinchState.active) {
+      // Пинч для масштабирования
+      const currentDistance = this.getDistance(touches[0], touches[1]);
+      const scale = (currentDistance / this.pinchState.startDistance) * this.pinchState.startScale;
+      
+      this.handleZoom(scale);
     }
   }
 
   handleTouchEnd(e) {
     e.preventDefault();
     
-    const touchDuration = Date.now() - this.touchData.touchTime;
-    const distance = Math.sqrt(
-      Math.pow(this.touchData.currentX - this.touchData.startX, 2) +
-      Math.pow(this.touchData.currentY - this.touchData.startY, 2)
-    );
-
-    // Если это был короткий тап (не перетаскивание)
-    if (touchDuration < 500 && distance < 10) {
-      this.handleTap();
-    }
-
-    // Завершаем перетаскивание
-    if (this.touchData.isDragging) {
-      this.finalizeDividerDrag();
-    }
-
-    // Сбрасываем состояние touch
-    this.resetTouchData();
-  }
-
-  handleDividerDrag() {
-    if (!this.app.renderer2d || !this.touchData.touchTarget) return;
-
-    const divider = this.touchData.touchTarget.divider;
-    if (!divider) return;
-
-    // Преобразуем touch-координаты в координаты интерьера
-    const interiorCoords = this.app.renderer2d.screenToInterior(
-      this.touchData.currentX,
-      this.touchData.currentY
-    );
-
-    // Применяем ограничения движения для разделителя
-    if (divider.type === 'shelf') {
-      const limits = this.app.cabinet.getShelfLimits(divider);
-      const constrainedY = Math.max(limits.min, Math.min(limits.max, interiorCoords.y));
-      divider.y = constrainedY;
-    } else if (divider.type === 'rod') {
-      const limits = this.app.cabinet.getRodLimits(divider);
-      const constrainedX = Math.max(limits.min, Math.min(limits.max, interiorCoords.x));
-      divider.x = constrainedX;
-    }
-
-    // Обновляем отображение
-    this.app.updateDisplay();
-  }
-
-  handleHover() {
-    if (!this.app.renderer2d) return;
-
-    // Эмулируем mouse move для системы hover
-    const mockEvent = {
-      offsetX: this.touchData.currentX,
-      offsetY: this.touchData.currentY
-    };
-
-    // Используем существующую логику наведения
-    if (this.app.handleCanvasMouseMove) {
-      this.app.handleCanvasMouseMove(mockEvent);
-    }
-  }
-
-  handleTap() {
-    // Проверяем состояние приложения
-    const addMode = this.app.getAddMode ? this.app.getAddMode() : 'none';
+    const touches = e.touches;
     
-    if (addMode === 'none') {
-      // Обычный тап - проверяем выбор элементов
-      this.handleSelection();
-    } else {
-      // Режим добавления - добавляем элемент
-      this.handleAddElement();
-    }
-  }
-
-  handleSelection() {
-    if (!this.app.renderer2d) return;
-
-    const element = this.app.renderer2d.getElementAt(
-      this.touchData.startX, 
-      this.touchData.startY
-    );
-
-    if (element) {
-      // Показываем информацию об элементе
-      this.showElementInfo(element);
-      this.showHapticFeedback();
-    }
-  }
-
-  handleAddElement() {
-    // Эмулируем клик для добавления элемента
-    const mockEvent = {
-      offsetX: this.touchData.startX,
-      offsetY: this.touchData.startY
-    };
-
-    if (this.app.handleCanvasClick) {
-      this.app.handleCanvasClick(mockEvent);
-      this.showHapticFeedback();
-    }
-  }
-
-  finalizeDividerDrag() {
-    if (this.touchData.touchTarget && this.touchData.touchTarget.divider) {
-      // Сохраняем в историю
-      if (this.app.saveHistory) {
-        this.app.saveHistory();
+    if (touches.length === 0) {
+      // Все касания закончились
+      if (this.touchState.touching && !this.touchState.moved) {
+        // Это был тап
+        this.handleTap(this.touchState.startX, this.touchState.startY);
       }
       
-      // Обновляем список деталей
-      if (this.app.updatePartsList) {
-        this.app.updatePartsList();
-      }
-    }
-  }
-
-  showElementInfo(element) {
-    // Показываем временную информацию об элементе
-    const info = this.getElementInfo(element);
-    if (info) {
-      this.showTooltip(info, this.touchData.startX, this.touchData.startY);
-    }
-  }
-
-  getElementInfo(element) {
-    if (!element) return null;
-
-    switch (element.type) {
-      case 'shelf':
-        return `Полка: ${Math.round(element.width)}×${Math.round(element.depth)} мм`;
-      case 'rod':
-        return `Штанга: ${Math.round(element.height)} мм`;
-      case 'divider':
-        return `Разделитель: ${element.divider.type}`;
-      case 'section':
-        return `Секция: ${Math.round(element.width)}×${Math.round(element.height)} мм`;
-      default:
-        return null;
-    }
-  }
-
-  showTooltip(text, x, y) {
-    // Удаляем существующий tooltip
-    this.hideTooltip();
-
-    const tooltip = document.createElement('div');
-    tooltip.className = 'touch-tooltip';
-    tooltip.textContent = text;
-    tooltip.style.cssText = `
-      position: fixed;
-      left: ${x}px;
-      top: ${y - 40}px;
-      background: rgba(0, 0, 0, 0.8);
-      color: white;
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 12px;
-      pointer-events: none;
-      z-index: 1000;
-      white-space: nowrap;
-      transform: translateX(-50%);
-    `;
-
-    document.body.appendChild(tooltip);
-
-    // Автоматически скрываем через 2 секунды
-    setTimeout(() => this.hideTooltip(), 2000);
-  }
-
-  hideTooltip() {
-    const existing = document.querySelector('.touch-tooltip');
-    if (existing) {
-      existing.remove();
-    }
-  }
-
-  showHapticFeedback() {
-    // Тактильная обратная связь на поддерживающих устройствах
-    if ('vibrate' in navigator) {
-      navigator.vibrate(50);
-    }
-  }
-
-  setupMobileUI() {
-    // Добавляем мобильные элементы интерфейса
-    this.addMobileControls();
-    this.setupSwipeGestures();
-    this.optimizeForTouch();
-  }
-
-  addMobileControls() {
-    const controls = document.querySelector('.canvas-controls');
-    if (!controls) return;
-
-    // Добавляем кнопку "Готово" для завершения режима добавления
-    const doneButton = document.createElement('button');
-    doneButton.className = 'canvas-btn mobile-done-btn';
-    doneButton.innerHTML = '✓ Готово';
-    doneButton.style.display = 'none';
-    
-    doneButton.addEventListener('click', () => {
-      if (this.app.cancelAddMode) {
-        this.app.cancelAddMode();
-      }
-      doneButton.style.display = 'none';
-    });
-
-    controls.appendChild(doneButton);
-
-    // Показываем кнопку "Готово" в режиме добавления
-    const observer = new MutationObserver(() => {
-      const addMode = this.app.getAddMode ? this.app.getAddMode() : 'none';
-      doneButton.style.display = addMode !== 'none' ? 'block' : 'none';
-    });
-
-    observer.observe(document.body, { 
-      attributes: true, 
-      subtree: true, 
-      attributeFilter: ['class', 'data-add-mode'] 
-    });
-  }
-
-  setupSwipeGestures() {
-    const sidebar = document.querySelector('.sidebar');
-    if (!sidebar) return;
-
-    let startY = 0;
-    let currentY = 0;
-
-    sidebar.addEventListener('touchstart', (e) => {
-      startY = e.touches[0].clientY;
-    }, { passive: true });
-
-    sidebar.addEventListener('touchmove', (e) => {
-      currentY = e.touches[0].clientY;
-    }, { passive: true });
-
-    sidebar.addEventListener('touchend', () => {
-      const deltaY = currentY - startY;
+      this.touchState.touching = false;
+      this.touchState.moved = false;
+      this.pinchState.active = false;
       
-      // Свайп вверх - скрыть панель
-      if (deltaY < -50 && window.innerWidth <= 768) {
-        this.collapseSidebar();
-      }
-      // Свайп вниз - показать панель
-      else if (deltaY > 50 && window.innerWidth <= 768) {
-        this.expandSidebar();
-      }
-    }, { passive: true });
-  }
-
-  collapseSidebar() {
-    const sidebar = document.querySelector('.sidebar');
-    const mainContent = document.querySelector('.main-content');
-    
-    if (sidebar && mainContent) {
-      sidebar.style.maxHeight = '30vh';
-      mainContent.style.height = '70vh';
+    } else if (touches.length === 1) {
+      // Остался один палец, сбрасываем пинч
+      this.pinchState.active = false;
     }
   }
 
-  expandSidebar() {
-    const sidebar = document.querySelector('.sidebar');
-    const mainContent = document.querySelector('.main-content');
-    
-    if (sidebar && mainContent) {
-      sidebar.style.maxHeight = '50vh';
-      mainContent.style.height = '50vh';
+  getDistance(touch1, touch2) {
+    const dx = touch1.clientX - touch2.clientX;
+    const dy = touch1.clientY - touch2.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  handlePan(deltaX, deltaY) {
+    // Перемещение камеры/канваса
+    if (this.app.offsetX !== undefined && this.app.offsetY !== undefined) {
+      this.app.offsetX += deltaX;
+      this.app.offsetY += deltaY;
+      
+      if (window.render) {
+        window.render();
+      }
     }
   }
 
-  optimizeForTouch() {
-    // Увеличиваем зоны нажатия для мобильных
-    const style = document.createElement('style');
-    style.textContent = `
-      @media (hover: none) and (pointer: coarse) {
-        .canvas-btn {
-          min-height: 44px;
-          min-width: 44px;
-        }
-        
-        .input-field {
-          min-height: 44px;
-        }
-        
-        .view-btn {
-          min-height: 44px;
-        }
+  handleZoom(scale) {
+    // Масштабирование
+    const minScale = 0.5;
+    const maxScale = 3;
+    
+    scale = Math.max(minScale, Math.min(maxScale, scale));
+    
+    if (this.app.scale !== undefined) {
+      this.app.scale = scale;
+      this.app.targetScale = scale;
+      
+      if (window.render) {
+        window.render();
       }
-    `;
-    document.head.appendChild(style);
+    }
   }
 
-  resetTouchData() {
-    this.touchData = {
-      startX: 0,
-      startY: 0,
-      currentX: 0,
-      currentY: 0,
-      isDragging: false,
-      touchTarget: null,
-      touchTime: 0
-    };
+  handleTap(x, y) {
+    // Преобразуем координаты экрана в координаты канваса
+    const rect = this.canvas.getBoundingClientRect();
+    const canvasX = x - rect.left;
+    const canvasY = y - rect.top;
+    
+    // Эмулируем клик мыши для совместимости с существующим кодом
+    const mouseEvent = new MouseEvent('click', {
+      clientX: x,
+      clientY: y,
+      bubbles: true,
+      cancelable: true
+    });
+    
+    // Добавляем свойства для канваса
+    mouseEvent.offsetX = canvasX;
+    mouseEvent.offsetY = canvasY;
+    
+    this.canvas.dispatchEvent(mouseEvent);
+    
+    console.log(`Touch tap at: ${canvasX}, ${canvasY}`);
   }
 
-  // Публичные методы для интеграции с основным приложением
-  isTouch() {
-    return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  // Дополнительные методы для жестов
+  handleLongPress(x, y) {
+    // Длинное нажатие - можно использовать для контекстного меню
+    console.log('Long press detected');
+    
+    if (window.mobileUI && window.mobileUI.showContextMenu) {
+      window.mobileUI.showContextMenu(x, y);
+    }
   }
 
-  isMobile() {
-    return window.innerWidth <= 768;
+  handleDoubleTap(x, y) {
+    // Двойной тап - можно использовать для сброса масштаба
+    console.log('Double tap detected');
+    
+    if (this.app.scale !== undefined) {
+      this.app.scale = 1;
+      this.app.targetScale = 1;
+      this.app.offsetX = 0;
+      this.app.offsetY = 0;
+      
+      if (window.render) {
+        window.render();
+      }
+      
+      if (window.mobileUI && window.mobileUI.showToast) {
+        window.mobileUI.showToast('Масштаб сброшен');
+      }
+    }
+  }
+
+  // Метод для обновления состояния при изменении режима приложения
+  updateMode(mode) {
+    console.log(`Touch handler mode updated: ${mode}`);
+    // Здесь можно изменить поведение жестов в зависимости от режима
   }
 
   destroy() {
-    // Очистка обработчиков событий
-    this.hideTooltip();
-    this.resetTouchData();
+    if (this.canvas) {
+      this.canvas.removeEventListener('touchstart', this.handleTouchStart);
+      this.canvas.removeEventListener('touchmove', this.handleTouchMove);
+      this.canvas.removeEventListener('touchend', this.handleTouchEnd);
+      this.canvas.removeEventListener('touchcancel', this.handleTouchEnd);
+    }
   }
 }
 
-// Экспорт для использования в других модулях
+// Экспорт
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = TouchHandler;
 } else {
